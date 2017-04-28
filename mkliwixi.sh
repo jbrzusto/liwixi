@@ -85,7 +85,7 @@ export IMAGE_MOUNT_POINT=/tmp/$IMAGE_FILENAME
 mount $LOOPDEV $IMAGE_MOUNT_POINT
 rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
          --exclude='/tmp/**'  --exclude'=/boot/**' --exclude='/media/**'   \
-         --exclude='/mnt/**'  --exclude'=/run/**'                          \
+         --exclude='/mnt/**'  --exclude'=/run/**'  --exclude='/dev/**'     \
          / $IMAGE_MOUNT_POINT
 
 echo "Fixing the fstab entry for the root device"
