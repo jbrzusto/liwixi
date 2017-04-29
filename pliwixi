@@ -49,7 +49,7 @@ This script must be run as root.
 EOF
     exit 1;
 fi
-echo <<EOF
+cat <<EOF
 
 I'll make the image big enough to hold the storage *used* by the
 current root file system, with an additional 25% to accomodate logfile
@@ -94,13 +94,26 @@ echo "Copying this machine's root filesystem to the image on $LOOPDEV"
 rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
          --exclude='/tmp/**'  --exclude'=/boot/**' --exclude='/media/**'   \
          --exclude='/mnt/**'  --exclude'=/run/**'  --exclude='/dev/**'     \
-         / $IMAGE_MOUNT_POINT
+         / $IMAGE_MOUNT_POINT/
 
-echo "Fixing the fstab entry for the root device"
+cat <<EOF
 
-sed -i -e '/ \/ /s/^[^ ]*/\/dev\/loop0/' $IMAGE_MOUNT_POINT/etc/fstab
+Creating a symlink in the image from /boot to /dev/sdcard
+EOF
+pushd $IMAGE_MOUNT_POINT
+rmdir boot
+ln -s /dev/sdcard boot
+popd
 
-echo <<EOF
+cat <<EOF
+
+Fixing the fstab entry for the root device, and removing
+the entry for /dev/mmcblk0p1
+EOF
+
+sed -i -e '/ \/ /s/^[^ ]*/\/dev\/loop0/;/\/dev\/mmcblk0p1/d' $IMAGE_MOUNT_POINT/etc/fstab
+
+cat <<EOF
 
 Delete any active initramfs lines from config.txt in
 $TEMPSUB then add a line so that it loads the initramfs
@@ -109,14 +122,15 @@ EOF
 grep -v "^initramfs " /boot/config.txt >  $TEMPSUB/config.txt
 echo "initramfs $INITRAMFS" >> $TEMPSUB/config.txt
 
-echo <<EOF
+cat <<EOF
+
 Changing the kernel command line in cmdline.txt in $TEMPSUB
 so it that uses the new image as its root filesystem.
 EOF
 
 cat /boot/cmdline.txt | sed -e 's/ root=[^ ]+ / root=\/dev\/loop0 /' > $TEMPSUB/cmdline.txt
 
-echo <<EOF
+cat <<EOF
 
 You will now be dropped into a bash shell at the top-level of the
 uncompressed image, so you can verify and customize it.
@@ -125,11 +139,6 @@ For example:
  - does etc/fstab show /dev/loop0 as being mounted on '/'
 
  - are you accidentally distributing any private ssh keys in home/*/.ssh ?
-
- - the file being set up on /dev/loop0 in the initramfs should have same name as your
-   uncompressed image:
-      zcat $TEMPSUB/$INITRAMFS | cpio --extract init | grep losetup
-   should show /dev/sdcard/$IMAGE_FILENAME
 
 When you wish to leave the shell and continue creating the image, hit
 Ctrl-D or type 'exit'.
@@ -143,7 +152,7 @@ RV=$?
 popd
 
 if (( $RV != 0 )); then
-    echo <<EOF
+    cat <<EOF
 
 Compression of image into .zip archive cancelled, leaving the
 uncompressed image mounted at $IMAGE_MOUNT_POINT.  To unmount and
@@ -162,7 +171,7 @@ EOF
     exit 1
 fi
 
-echo <<EOF
+cat <<EOF
 
 Creating the liwixi archive using zip; you're of course free to use a
 better program to create a smaller archive if you are willing to teach
@@ -172,7 +181,7 @@ EOF
 export ARCHIVE=${BRAND}_LIWIXI.ZIP
 
 pushd /boot
-echo <<EOF
+cat <<EOF
 
 1. Archiving files from the /boot directory, except for cmdline.txt and
    config.txt for which we already have modified copies,
@@ -180,7 +189,7 @@ echo <<EOF
 EOF
 zip -r ${DEST}/$ARCHIVE . -x ${ARCHIVE} -x cmdline.txt -x config.txt -x "*liwixi*" -x "*LIWIXI*"
 cd $TEMPSUB
-echo <<EOF
+cat <<EOF
 
 2. Archiving image, initramfs, config.txt, cmdline.txt from $TEMPSUB
 EOF
