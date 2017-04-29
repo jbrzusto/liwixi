@@ -66,7 +66,6 @@ EOF
 read _ignore_
 
 cat <<EOF
-
 Modifying the liwixi script so that it points to your images's
 eventual location on the SD card.  The whole initramfs has the simple
 job of setting up /dev/loop0 on that image.
@@ -83,12 +82,15 @@ mkinitramfs -o $TEMPSUB/$INITRAMFS
 echo "Generating the image file in $TEMPSUB"
 
 dd if=/dev/zero bs=1M count=${IMAGE_MB} of=$TEMPSUB/$IMAGE_FILENAME
+
 export LOOPDEV=`losetup -f`
 losetup $LOOPDEV $TEMPSUB/$IMAGE_FILENAME
 mkfs -t ext4 $LOOPDEV
 mkdir /tmp/$IMAGE_FILENAME
 export IMAGE_MOUNT_POINT=/tmp/$IMAGE_FILENAME
+echo "Mounting the image file on $LOOPDEV"
 mount $LOOPDEV $IMAGE_MOUNT_POINT
+echo "Copying this machine's root filesystem to the image on $LOOPDEV"
 rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
          --exclude='/tmp/**'  --exclude'=/boot/**' --exclude='/media/**'   \
          --exclude='/mnt/**'  --exclude'=/run/**'  --exclude='/dev/**'     \
@@ -99,11 +101,12 @@ echo "Fixing the fstab entry for the root device"
 sed -i -e '/ \/ /s/^[^ ]*/\/dev\/loop0/' $IMAGE_MOUNT_POINT/etc/fstab
 
 echo <<EOF
-Adding a line to config.txt in $TEMPSUB
-so that it loads the initramfs
+
+Delete any active initramfs lines from config.txt in
+$TEMPSUB then add a line so that it loads the initramfs
 EOF
 
-cp /boot/config.txt $TEMPSUB/
+grep -v "^initramfs " /boot/config.txt >  $TEMPSUB/config.txt
 echo "initramfs $INITRAMFS" >> $TEMPSUB/config.txt
 
 echo <<EOF
@@ -111,9 +114,7 @@ Changing the kernel command line in cmdline.txt in $TEMPSUB
 so it that uses the new image as its root filesystem.
 EOF
 
-cat /boot/cmdline.txt | sed -e 's/ root=[^ ]+ / root=/dev/loop0 /' > $TEMPSUB/cmdline.txt
-
-echo <<EOF
+cat /boot/cmdline.txt | sed -e 's/ root=[^ ]+ / root=\/dev\/loop0 /' > $TEMPSUB/cmdline.txt
 
 echo <<EOF
 
@@ -157,6 +158,9 @@ delete the uncompressed image and other files just created, do:
    rm $TEMPSUB/cmdline.txt
    rmdir $TEMPSUB
 EOF
+
+    exit 1
+fi
 
 echo <<EOF
 
