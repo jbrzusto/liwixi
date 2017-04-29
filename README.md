@@ -89,7 +89,8 @@ developers creating images for them.
   whose image you wish to distribute as a LIWIXI archive.  You should
   be logged into a root shell on this machine.
 
-- a USB memory stick or other additional storage should be mounted (maybe)
+- a USB memory stick or other additional storage should be mounted for use
+  as both temporary and destination storage for the LIWIXI archive.
 
 - make sure you have the zip and initramfs-tools packages installed; e.g.:
 ```
@@ -117,8 +118,10 @@ where:
      defaults to $DEST, which must then have enough room for both the
      compressed and uncompressed images combined.
 
-DEST or TEMP can be a USB memory stick or other external storage that
-you have already mounted.
+DEST and TEMP should be on a USB memory stick or other external storage that
+you have already mounted, because the SD card itself is comparatively slow
+for large transfers, and might not have sufficient storage anyway.
+
 
 After some chugging, and a chance to customize the image from a shell,
 you end up with a file called
