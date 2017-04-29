@@ -17,7 +17,7 @@
 # See the accompanying script 'pliwixi' for how to build an archive
 # containing an appropriate image from a running system.
 
-PREREQS="udev"
+PREREQS=""
 
 prereqs() { echo "$PREREQS"; }
 
