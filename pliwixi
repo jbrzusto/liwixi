@@ -15,13 +15,13 @@
 #
 # License: CC BY-SA or GPL v 2 or later
 
-BRAND=$1
-DEST=$2
-TEMP=$3
+export BRAND=$1
+export DEST=$2
+export TEMP=$3
 if [[ -z "$TEMP" ]]; then
-    TEMP=$DEST
+    export TEMP=$DEST
 fi
-TEMPSUB=$TEMP/liwixi
+export TEMPSUB=$TEMP/liwixi
 mkdir $TEMPSUB
 if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" ]]; then
     cat <<EOF
@@ -83,7 +83,7 @@ mkinitramfs -o $TEMPSUB/$INITRAMFS
 echo "Generating the image file in $TEMPSUB"
 
 dd if=/dev/zero bs=1M count=${IMAGE_MB} of=$TEMPSUB/$IMAGE_FILENAME
-LOOPDEV=`losetup -f`
+export LOOPDEV=`losetup -f`
 losetup $LOOPDEV $TEMPSUB/$IMAGE_FILENAME
 mkfs -t ext4 $LOOPDEV
 mkdir /tmp/$IMAGE_FILENAME
@@ -98,34 +98,13 @@ echo "Fixing the fstab entry for the root device"
 
 sed -i -e '/ \/ /s/^[^ ]*/\/dev\/loop0/' $IMAGE_MOUNT_POINT/etc/fstab
 
-cat <<EOF
-
-You should verify that the new etc/fstab
-shows /dev/loop0 as the device on which '/' is mounted
-Here's the new fstab:
-EOF
-cat  $IMAGE_MOUNT_POINT/etc/fstab
-
-echo <<EOF
-
-Hit enter to continue, or Ctrl-C to quit and fix this script...
-EOF
-
-read _ignore_
-
-echo "Okay, proceeding to create the .zip archive"
-
-# unmount the image
-umount $IMAGE_MOUNT_POINT
-losetup -d $LOOPDEV
-
 echo <<EOF
 Adding a line to config.txt in $TEMPSUB
 so that it loads the initramfs
 EOF
 
 cp /boot/config.txt $TEMPSUB/
-echo "initramfs $INITRAMFS" >> $/TEMP/config.txt
+echo "initramfs $INITRAMFS" >> $TEMPSUB/config.txt
 
 echo <<EOF
 Changing the kernel command line in cmdline.txt in $TEMPSUB
@@ -133,6 +112,51 @@ so it that uses the new image as its root filesystem.
 EOF
 
 cat /boot/cmdline.txt | sed -e 's/ root=[^ ]+ / root=/dev/loop0 /' > $TEMPSUB/cmdline.txt
+
+echo <<EOF
+
+echo <<EOF
+
+You will now be dropped into a bash shell at the top-level of the
+uncompressed image, so you can verify and customize it.
+For example:
+
+ - does etc/fstab show /dev/loop0 as being mounted on '/'
+
+ - are you accidentally distributing any private ssh keys in home/*/.ssh ?
+
+ - the file being set up on /dev/loop0 in the initramfs should have same name as your
+   uncompressed image:
+      zcat $TEMPSUB/$INITRAMFS | cpio --extract init | grep losetup
+   should show /dev/sdcard/$IMAGE_FILENAME
+
+When you wish to leave the shell and continue creating the image, hit
+Ctrl-D or type 'exit'.
+
+To leave the shell and cancel the image creation, type 'exit 1'.
+EOF
+
+pushd $IMAGE_MOUNT_POINT
+bash
+RV=$?
+popd
+
+if (( $RV != 0 )); then
+    echo <<EOF
+
+Compression of image into .zip archive cancelled, leaving the
+uncompressed image mounted at $IMAGE_MOUNT_POINT.  To unmount and
+delete the uncompressed image and other files just created, do:
+
+   umount $IMAGE_MOUNT_POINT
+   losetup -d $LOOPDEV
+   rmdir /tmp/$IMAGE_FILENAME
+   rm $TEMPSUB/$IMAGE_FILENAME
+   rm $TEMPSUB/$INITRAMFS
+   rm $TEMPSUB/config.txt
+   rm $TEMPSUB/cmdline.txt
+   rmdir $TEMPSUB
+EOF
 
 echo <<EOF
 
@@ -154,10 +178,10 @@ zip -r ${DEST}/$ARCHIVE . -x ${ARCHIVE} -x cmdline.txt -x config.txt -x "*liwixi
 cd $TEMPSUB
 echo <<EOF
 
-2. Archiving image and initramfs files from $TEMPSUB
+2. Archiving image, initramfs, config.txt, cmdline.txt from $TEMPSUB
 EOF
 zip -m ${DEST}/$ARCHIVE * -x ${ARCHIVE}
 popd
 rmdir $TEMPSUB
-echo Done:
+echo LIWIXI archive of this OS created:
 ls -al ${DEST}/$ARCHIVE

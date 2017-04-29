@@ -120,7 +120,8 @@ where:
 DEST or TEMP can be a USB memory stick or other external storage that
 you have already mounted.
 
-After some chugging, you end up with a file called
+After some chugging, and a chance to customize the image from a shell,
+you end up with a file called
 `
 ${DEST}/${BRAND}_LIWIXI.zip
 `
