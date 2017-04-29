@@ -1,8 +1,13 @@
 #!/bin/bash
 #
-# mkliwixi.sh: generate a liwixi .zip archive that users can unzip to
+# pliwixi: put linux where I can see it
+#
+# i.e. generate a .zip archive that users can unzip to
 # a factory-fresh vfat-formatted SD card.  That card will boot directly
-# on the Raspberry Pi.
+# on the Raspberry Pi without repartitioning or reimaging.
+#
+# This is intended as a simple way to distribute a linux for small computers
+# booted from flash storage.
 #
 # (C) John Brzustowski 2017
 #
@@ -16,27 +21,28 @@ TEMP=$3
 if [[ -z "$TEMP" ]]; then
     TEMP=$DEST
 fi
-TEMP=$TEMP/liwixi
-mkdir $TEMP
+TEMPSUB=$TEMP/liwixi
+mkdir $TEMPSUB
 if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" ]]; then
     cat <<EOF
 Usage:
 
-   mkliwixi.sh BRAND DEST [TEMP]
+   pliwixi BRAND DEST [TEMP]
 
 create a .zip archive with a bootable linux image and associated
 files that a user can copy to a VFAT SD card to boot a Raspberry Pi.
-The file will be called \$DEST/\${BRAND}_LIWIXI.ZIP
+The file will be called \$DEST/\${BRAND}_LIWIXI.ZIP, where
 
-BRAND: a string identifying your linux distribution, however you wish
-       to do so.  Use embedded whitespace at your own risk.
+   - BRAND: a string identifying your linux distribution; whitespace
+     is probably toxic
 
-DEST: the path to a directory which will hold the archive.  It must
-      be large enough to store the compressed archive containing
-      image and boot files.
+   - DEST: path to a folder on a device with enough room to store
+     your compressed image plus boot files
 
-TEMP: temporary storage large enough to store the uncompressed image
-      and boot files
+   - TEMP: optional path to a folder on a device with enough room to
+     store your *uncompressed* image plus boot files;
+     defaults to $DEST, which must then have enough room for both the
+     compressed and uncompressed images combined.
 
 This script must be run as root.
 
@@ -69,16 +75,16 @@ EOF
 export IMAGE_FILENAME=${BRAND}_LIWIXI_IMAGE_DO_NOT_DELETE
 cat ./liwixi | sed -e "s/@@LIWIXI_IMAGE_FILENAME@@/$IMAGE_FILENAME/" > /etc/initramfs-tools/scripts/local-premount/liwixi
 
-echo "Generating an initramfs in $TEMP"
+echo "Generating an initramfs in $TEMPSUB"
 
 export INITRAMFS=${BRAND}_LIWIXI_INITRAMFS_DO_NOT_DELETE
-mkinitramfs -o $TEMP/$INITRAMFS
+mkinitramfs -o $TEMPSUB/$INITRAMFS
 
-echo "Generating the image file in $TEMP"
+echo "Generating the image file in $TEMPSUB"
 
-dd if=/dev/zero bs=1M count=${IMAGE_MB} of=$TEMP/$IMAGE_FILENAME
+dd if=/dev/zero bs=1M count=${IMAGE_MB} of=$TEMPSUB/$IMAGE_FILENAME
 LOOPDEV=`losetup -f`
-losetup $LOOPDEV $TEMP/$IMAGE_FILENAME
+losetup $LOOPDEV $TEMPSUB/$IMAGE_FILENAME
 mkfs -t ext4 $LOOPDEV
 mkdir /tmp/$IMAGE_FILENAME
 export IMAGE_MOUNT_POINT=/tmp/$IMAGE_FILENAME
@@ -114,19 +120,19 @@ umount $IMAGE_MOUNT_POINT
 losetup -d $LOOPDEV
 
 echo <<EOF
-Adding a line to config.txt in $TEMP
+Adding a line to config.txt in $TEMPSUB
 so that it loads the initramfs
 EOF
 
-cp /boot/config.txt $TEMP/
+cp /boot/config.txt $TEMPSUB/
 echo "initramfs $INITRAMFS" >> $/TEMP/config.txt
 
 echo <<EOF
-Changing the kernel command line in cmdline.txt in $TEMP
+Changing the kernel command line in cmdline.txt in $TEMPSUB
 so it that uses the new image as its root filesystem.
 EOF
 
-cat /boot/cmdline.txt | sed -e 's/ root=[^ ]+ / root=/dev/loop0 /' > $TEMP/cmdline.txt
+cat /boot/cmdline.txt | sed -e 's/ root=[^ ]+ / root=/dev/loop0 /' > $TEMPSUB/cmdline.txt
 
 echo <<EOF
 
@@ -145,13 +151,13 @@ echo <<EOF
    and liwixi, in case you're using /boot as temporary storage.
 EOF
 zip -r ${DEST}/$ARCHIVE . -x ${ARCHIVE} -x cmdline.txt -x config.txt -x "*liwixi*" -x "*LIWIXI*"
-cd $TEMP
+cd $TEMPSUB
 echo <<EOF
 
-2. Archiving image and initramfs files from $TEMP
+2. Archiving image and initramfs files from $TEMPSUB
 EOF
 zip -m ${DEST}/$ARCHIVE * -x ${ARCHIVE}
 popd
-rmdir $TEMP
+rmdir $TEMPSUB
 echo Done:
 ls -al ${DEST}/$ARCHIVE

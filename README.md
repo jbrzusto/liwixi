@@ -1,6 +1,9 @@
 # liwixi - linux where I can see it
 
-Boot a Raspberry Pi (and others?) from a μSD card without imaging it.
+Boot a small computer from a μSD card without imaging it.
+Known to work for these computer / OS combinations so far:
+
+  2017-04-28:  Raspberry Pi 2/3 with Raspbian 8
 
 ## For Users ##
 
@@ -53,16 +56,18 @@ Boot a Raspberry Pi (and others?) from a μSD card without imaging it.
 
  - if COOLSTUFF needs extra storage for a linux-style filesystem, it will create
    further big fat files called COOLSTUFF_LIWIXI_STORAGE_N_DO_NOT_DELETE where
-   N will be a number like 1, 2, ...
+   N is 1, 2, ...
 
 ## For Developers ##
 
 Linux can use a loopback device for its root file system; you just
 have to make sure an appropriate initramfs script takes care of
-setting it up before the kernel needs it.
+setting it up on a filesystem image before the kernel needs it.
+This repo provides a tool to create such an image from a working
+system.
 
-When this image boots, the entire SD card is mounted as a VFAT
-filesystem at /boot.  The linux image file is then recursively
+After booting, the entire SD card will be mounted as a VFAT filesystem
+at /boot and at /dev/sdcard.  The linux image file is then recursively
 accessible as /boot/BRAND_LIWIXI_IMAGE_DO_NOT_DELETE.  The small
 initramfs used to set-up /dev/loop0 is then
 /boot/BRAND_LIWIXI_INITRAMFS_DO_NOT_DELETE
@@ -72,7 +77,7 @@ ext4 filesystem, to support the growth of logfiles, etc.  You can of
 course allocate further VFAT-file-backed loopback filesystems on the
 SD card if you need more storage, but do you really need the features
 of a linux filesystem enough to justify hiding the files from your
-users?
+non-linux users when they pop the SD card into their own computer?
 
 None of this is original or clever, but it might lower the barrier for
 people just starting in small computer linux, and ease the tedium for
@@ -80,41 +85,47 @@ developers creating images for them.
 
 ### Requirements ###
 
-- a Raspberry Pi (or ???) running a recent linux, e.g. raspbian
+- a small computer running a recent linux, e.g. Raspbian on the Pi 2/3,
+  whose image you wish to distribute as a LIWIXI archive.  You should
+  be logged into a root shell on this machine.
 
 - a USB memory stick or other additional storage should be mounted (maybe)
 
-- you should be logged into root shell on the Pi which is running
-  the linux image you want to distribute.
-
-- make sure you have the zip and initramfs-tools packages installed:
+- make sure you have the zip and initramfs-tools packages installed; e.g.:
 ```
 apt-get install zip initramfs-tools
 ```
-- grab the mkliwixi.sh script:
+- grab liwixi:
 ```bash
-curl -O https://raw.githubusercontent.com/jbrzusto/liwixi/master/mkliwixi.sh
+git clone https://github.com/jbrzusto/liwixi/master
 ```
 - run the script:
 ```bash
-./mkliwixi BRAND DEST [TEMP]
+cd liwixi
+./pliwixi BRAND DEST [TEMP]
 ```
-  where:
+where:
 
-    - BRAND: a string describing your linux distribution; whitespace
-      is probably poisonous
+   - BRAND: a string identifying your linux distribution; whitespace
+     is probably toxic
 
-    - DEST: path to a folder with enough room to store your compressed
-      image plus boot files
+   - DEST: path to a folder on a device with enough room to store
+     your compressed image plus boot files
 
-    - TEMP: optional path to a folder with enough room to store your *uncompressed*
-      image plus boot files; defaults to $DEST
+   - TEMP: optional path to a folder on a device with enough room to
+     store your *uncompressed* image plus boot files;
+     defaults to $DEST, which must then have enough room for both the
+     compressed and uncompressed images combined.
+
+DEST or TEMP can be a USB memory stick or other external storage that
+you have already mounted.
 
 After some chugging, you end up with a file called
 `
-$DEST/${BRAND}_LIWIXI.zip
+${DEST}/${BRAND}_LIWIXI.zip
 `
-Your end users can then unzip that file onto a fresh
-micro SD card, and then boot a Pi directly from it.
 
-# This is highly untested - use at your own risk #
+which your users can unzip onto a fresh VFAT SD card and use directly;
+see:  For Users (above).
+
+# Deployment === Testing - use at your own risk #

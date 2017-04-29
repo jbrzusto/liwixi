@@ -1,6 +1,22 @@
 #!/bin/sh -e
 
 # linux where i can see it
+#
+# See https://github.com/jbrzusto/liwixi for details.
+#
+# This script fragment sets up /dev/loop0 on the image file
+# /dev/mmcblk0p1/@@LIWIXI_IMAGE_FILENAME@@, so the kernel can use the
+# image as its root filesystem.  This script will become part of the
+# initramfs's init script, run after the kernel boots but before it
+# mounts its rootfs.  The image is also mounted on /dev/sdcard,
+# which survives the switchover to the root filesystem.
+#
+# /dev/mmcblk0p1 can be an SD card with a single, vfat-formatted
+# partition (the whole point of liwixi).
+#
+# See the accompanying script 'pliwixi' for how to build an archive
+# containing an appropriate image from a running system.
+
 PREREQS="udev"
 
 prereqs() { echo "$PREREQS"; }
@@ -14,5 +30,7 @@ esac
 
 # mount /dev/mmcblk0p1 on the rootfs at /dev/sdcard
 mkdir /dev/sdcard
-mount -t vfat /dev/mmcblk0p1 /dev/sdcard
+mount /dev/mmcblk0p1 /dev/sdcard
+
+# set up the loopback device on the image
 losetup /dev/loop0 /dev/sdcard/@@LIWIXI_IMAGE_FILENAME@@
