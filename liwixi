@@ -17,6 +17,12 @@
 # See the accompanying script 'pliwixi' for how to build an archive
 # containing an appropriate image from a running system.
 
+## @@REMOVE@@ <-- lines with this string are to prevent me from accidentally running
+## @@REMOVE@@ this script fragment instead of pliwixi.  They are removed when
+## @@REMOVE@@ this script fragment is copied into /etc/initramfs-tools/...
+echo "This isn't the script you're looking for.  Run pliwixi instead." ## @@REMOVE@@
+exit ## @@REMOVE@@
+
 PREREQS=""
 
 prereqs() { echo "$PREREQS"; }

@@ -15,6 +15,10 @@
 #
 # License: CC BY-SA or GPL v 2 or later
 
+if [[ "$1" == "-a" ]]; then
+    export AUTO=1
+    shift
+fi
 export BRAND=$1
 export DEST=$2
 export TEMP=$3
@@ -27,7 +31,7 @@ if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" ]]; then
     cat <<EOF
 Usage:
 
-   pliwixi BRAND DEST [TEMP]
+   pliwixi [-a] BRAND DEST [TEMP]
 
 create a .zip archive with a bootable linux image and associated
 files that a user can copy to a VFAT SD card to boot a Raspberry Pi.
@@ -43,6 +47,10 @@ The file will be called \$DEST/\${BRAND}_LIWIXI.ZIP, where
      store your *uncompressed* image plus boot files;
      defaults to $DEST, which must then have enough room for both the
      compressed and uncompressed images combined.
+
+Options:
+
+   -a: automatic creation; don't pause for user input
 
 This script must be run as root.
 
@@ -63,7 +71,11 @@ This image will occupy $IMAGE_MB M (M = 1024 * 1024 bytes).
 Hit enter to continue, or Ctrl-C to quit and do something else...
 EOF
 
-read _ignore_
+if [[ $AUTOMATIC ]]; then
+    echo "Skipping due to automatic mode."
+else
+    read _ignore_
+fi
 
 cat <<EOF
 Modifying the liwixi script so that it points to your images's
@@ -72,7 +84,7 @@ job of setting up /dev/loop0 on that image.
 EOF
 
 export IMAGE_FILENAME=${BRAND}_LIWIXI_IMAGE_DO_NOT_DELETE
-cat ./liwixi | sed -e "s/@@LIWIXI_IMAGE_FILENAME@@/$IMAGE_FILENAME/" > /etc/initramfs-tools/scripts/local-premount/liwixi
+cat ./liwixi | sed -e "s/@@LIWIXI_IMAGE_FILENAME@@/$IMAGE_FILENAME/;/@@REMOVE@@/d" > /etc/initramfs-tools/scripts/local-premount/liwixi
 
 echo "Generating an initramfs in $TEMPSUB"
 
@@ -146,13 +158,16 @@ Ctrl-D or type 'exit'.
 To leave the shell and cancel the image creation, type 'exit 1'.
 EOF
 
-pushd $IMAGE_MOUNT_POINT
-bash
-RV=$?
-popd
+if [[ $AUTOMATIC ]]; then
+    echo "Skipping due to automatic mode."
+else
+    pushd $IMAGE_MOUNT_POINT
+    bash
+    RV=$?
+    popd
 
-if (( $RV != 0 )); then
-    cat <<EOF
+    if (( $RV != 0 )); then
+        cat <<EOF
 
 Compression of image into .zip archive cancelled, leaving the
 uncompressed image mounted at $IMAGE_MOUNT_POINT.  To unmount and
@@ -168,7 +183,8 @@ delete the uncompressed image and other files just created, do:
    rmdir $TEMPSUB
 EOF
 
-    exit 1
+        exit 1
+    fi
 fi
 
 cat <<EOF
