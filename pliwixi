@@ -106,15 +106,28 @@ echo "Copying this machine's root filesystem to the image on $LOOPDEV"
 rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
          --exclude='/tmp/**'  --exclude'=/boot/**' --exclude='/media/**'   \
          --exclude='/mnt/**'  --exclude'=/run/**'  --exclude='/dev/**'     \
+         --exclude='/home/pi/.ssh/id_dsa_sgpidev**' \
+         --exclude='/home/pi/.ssh/id_dsa' \
+         --exclude='/home/pi/.ssh/id_dsa.pub' \
+         --exclude='/home/pi/.ssh/tunnel_port' \
          / $IMAGE_MOUNT_POINT/
 
+export SG_VERSION=``
 cat <<EOF
 
-Creating a symlink in the image from /boot to /dev/sdcard
+I'm making a few changes to the new image:
+- create a symlink from /boot to /dev/sdcard
+- set etc/bootcount to 0
+- set etc/beaglebone_id, etc/rpi_id, etc/hostname to "not_set"
+and setting /etc/bootcount to 0
 EOF
 pushd $IMAGE_MOUNT_POINT
 rmdir boot
 ln -s /dev/sdcard boot
+echo 0 > etc/bootcount
+for f in etc/beaglebone_id etc/rpi_id etc/hostname; do
+    echo not_set > $f
+done
 popd
 
 cat <<EOF
