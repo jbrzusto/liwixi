@@ -132,13 +132,9 @@ if [[ $EXCLUDE_FROM ]]; then
 fi;
 
 echo "Copying this machine's root filesystem to the image on $LOOPDEV"
-rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
-         --exclude='/tmp/**'  --exclude'=/boot/**' --exclude='/media/**'   \
-         --exclude='/mnt/**'  --exclude'=/run/**'  --exclude='/dev/**'     \
-         --exclude='/home/pi/.ssh/id_dsa_sgpidev**' \
-         --exclude='/home/pi/.ssh/id_dsa' \
-         --exclude='/home/pi/.ssh/id_dsa.pub' \
-         --exclude='/home/pi/.ssh/tunnel_port' \
+rsync -a --exclude='/proc/**' --exclude='/sys/**'  --exclude='/var/run/**' \
+         --exclude='/tmp/**'  --exclude='/boot/**' --exclude='/media/**'   \
+         --exclude='/mnt/**'  --exclude='/run/**'  --exclude='/dev/**'     \
          $EXCLUDE_FROM_CLAUSE \
          / $IMAGE_MOUNT_POINT/
 
