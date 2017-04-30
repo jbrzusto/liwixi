@@ -42,7 +42,7 @@ if [[ -z "$TEMP" ]]; then
 fi
 export TEMPSUB=$TEMP/liwixi
 mkdir $TEMPSUB
-if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" || ! -f $EXCLUDE_FROM ]]; then
+if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" || ( $EXCLUDE_FROM && ! -f $EXCLUDE_FROM ) ]]; then
     cat <<EOF
 Usage:
 
@@ -89,6 +89,12 @@ current root file system, with an additional 25% to accomodate logfile
 growth etc.
 EOF
 
+if [[ ! -z "$EXCLUDE_FROM" ]]; then
+cat <<EOF
+I will exclude files and paths from '$EXCLUDE_FROM'
+EOF
+fi
+
 export IMAGE_MB=$(( `df -BM --output=used / | tail -1l | tr -d 'M'` * 5 / 4))
 
 cat <<EOF
@@ -96,7 +102,7 @@ This image will occupy $IMAGE_MB M (M = 1024 * 1024 bytes).
 Hit enter to continue, or Ctrl-C to quit and do something else...
 EOF
 
-if [[ $AUTOMATIC ]]; then
+if [[ $AUTO ]]; then
     echo "Skipping due to automatic mode."
 else
     read _ignore_
@@ -197,7 +203,7 @@ Ctrl-D or type 'exit'.
 To leave the shell and cancel the image creation, type 'exit 1'.
 EOF
 
-if [[ $AUTOMATIC ]]; then
+if [[ $AUTO ]]; then
     echo "Skipping due to automatic mode."
 else
     pushd $IMAGE_MOUNT_POINT
@@ -235,14 +241,35 @@ EOF
 
 export ARCHIVE=${BRAND}_LIWIXI.ZIP
 
+## grab any excluded paths/files that begin with /boot, and write them
+## to a file appropriate for use with zip's -x@FILE option, relative to
+## the /boot directory in which we run zip
+
+export EXCLUDE_FROM_CLAUSE=""
+
+if [[ "$EXCLUDE_FROM" ]]; then
+    export TMP_EXCLUDE_FILE=`tempfile`
+    grep ^/boot $EXCLUDE_FROM | sed -e 's/\/boot\///' > $TMP_EXCLUDE_FILE
+    export EXCLUDE_FROM_CLAUSE="-x @$TMP_EXCLUDE_FILE"
+fi
+
 pushd /boot
+ZIPCMD="zip -r $DEST/$ARCHIVE . -x ${ARCHIVE} -x cmdline.txt -x config.txt -x \"*liwixi*\" -x \"*LIWIXI*\" $EXCLUDE_FROM_CLAUSE"
 cat <<EOF
 
 1. Archiving files from the /boot directory, except for cmdline.txt and
    config.txt for which we already have modified copies,
-   and liwixi, in case you're using /boot as temporary storage.
+   and liwixi, in case you're using /boot as temporary storage, and
+   any exclusions specified via EXCLUDE or the LIWIXI_EXCLUDE_FROM
+   environment variable using this command:
+
+   $ZIPCMD
+
 EOF
-zip -r ${DEST}/$ARCHIVE . -x ${ARCHIVE} -x cmdline.txt -x config.txt -x "*liwixi*" -x "*LIWIXI*"
+
+zip -r $DEST/$ARCHIVE . -x ${ARCHIVE} -x cmdline.txt -x config.txt -x "*liwixi*" -x "*LIWIXI*" $EXCLUDE_FROM_CLAUSE
+
+rm -f $TMP_EXCLUDE_FILE
 cd $TEMPSUB
 cat <<EOF
 
@@ -251,5 +278,18 @@ EOF
 zip -m ${DEST}/$ARCHIVE * -x ${ARCHIVE}
 popd
 rmdir $TEMPSUB
-echo LIWIXI archive of this OS created:
+echo <<EOF
+
+Done.  The LIWIXI archive of this OS is here:
+
+EOF
+
 ls -al ${DEST}/$ARCHIVE
+
+umount $IMAGE_MOUNT_POINT
+losetup -d $LOOPDEV
+rmdir /tmp/$IMAGE_FILENAME
+
+cat <<EOF
+
+EOF
