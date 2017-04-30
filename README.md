@@ -50,13 +50,19 @@ Known to work for these computer / OS combinations so far:
    which one is booted by editing config.txt to change these lines:
    ```
    kernel=kernel7.img
-   initramfs=COOLSTUFF_LIWIXI_RAMFS_DO_NOT_DELETE
+   initramfs=COOLSTUFF_LIWIXI_INITRAMFS_DO_NOT_DELETE
    ```
-   to others
+   to whatever is appropriate for a different version.  The
+   "...INITRAMFS..." and "...IMAGE..."  for a particular version of linux
+   have to be used together; the first knows the name of the second,
+   and causes linux to use it.
 
- - if COOLSTUFF needs extra storage for a linux-style filesystem, it will create
-   further big fat files called COOLSTUFF_LIWIXI_STORAGE_N_DO_NOT_DELETE where
-   N is 1, 2, ...
+ - if COOLSTUFF needs extra storage for a linux-style filesystem, it
+   might create more big fat files called
+   COOLSTUFF_LIWIXI_STORAGE_N_DO_NOT_DELETE where N is 1, 2, ...,
+   However, we encourage the COOLSTUFF developer to store media and
+   data files directly on the SD card's VFAT filesystem, so you can
+   access them if you pop the SD card into your laptop.
 
 ## For Developers ##
 
@@ -75,9 +81,12 @@ initramfs used to set-up /dev/loop0 is then
 The image created includes an additional 25% of free space within the
 ext4 filesystem, to support the growth of logfiles, etc.  You can of
 course allocate further VFAT-file-backed loopback filesystems on the
-SD card if you need more storage, but do you really need the features
-of a linux filesystem enough to justify hiding the files from your
-non-linux users when they pop the SD card into their own computer?
+SD card if you need more storage for software packages and so on.  But
+if your linux is intended for data acquisition, consider writing data
+files to the VFAT filesystem directly - do you really need the
+features of a linux filesystem enough to justify having the data files
+invisible to your non-linux users when they pop the SD card into their
+own computer?
 
 None of this is original or clever, but it might lower the barrier for
 people just starting in small computer linux, and ease the tedium for
@@ -126,7 +135,7 @@ for large transfers, and might not have sufficient storage anyway.
 After some chugging, and a chance to customize the image from a shell,
 you end up with a file called
 `
-${DEST}/${BRAND}_LIWIXI.zip
+${DEST}/${BRAND}_LIWIXI.ZIP
 `
 
 which your users can unzip onto a fresh VFAT SD card and use directly;
