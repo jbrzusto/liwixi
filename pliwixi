@@ -15,9 +15,27 @@
 #
 # License: CC BY-SA or GPL v 2 or later
 
-if [[ "$1" == "-a" ]]; then
-    export AUTO=1
-    shift
+export AUTO=0
+export EXCLUDE_FROM=
+
+while [[ "$1" != "" ]]; do
+    case $1 in
+        -a)
+            export AUTO=1
+            shift
+            ;;
+        -e)
+            export EXCLUDE_FROM="$2"
+            shift 2
+            ;;
+        *)
+            break
+            ;;
+    esac
+    wend
+;;
+
+
 fi
 export BRAND=$1
 export DEST=$2
@@ -27,11 +45,11 @@ if [[ -z "$TEMP" ]]; then
 fi
 export TEMPSUB=$TEMP/liwixi
 mkdir $TEMPSUB
-if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" ]]; then
+if [[ -z "$DEST" || ! -z "$4" || "$USER" != "root" || ! -f $EXCLUDE_FROM ]]; then
     cat <<EOF
 Usage:
 
-   pliwixi [-a] BRAND DEST [TEMP]
+   pliwixi [-a] [-e EXCLUDE] BRAND DEST [TEMP]
 
 create a .zip archive with a bootable linux image and associated
 files that a user can copy to a VFAT SD card to boot a Raspberry Pi.
@@ -51,6 +69,10 @@ The file will be called \$DEST/\${BRAND}_LIWIXI.ZIP, where
 Options:
 
    -a: automatic creation; don't pause for user input
+
+   -e: EXCLUDE is a path to a file containing files and paths to exclude
+       from the image; see the documentation for '--exclude-from' in
+       "man rsync"
 
 This script must be run as root.
 
@@ -102,6 +124,10 @@ mkdir /tmp/$IMAGE_FILENAME
 export IMAGE_MOUNT_POINT=/tmp/$IMAGE_FILENAME
 echo "Mounting the image file on $LOOPDEV"
 mount $LOOPDEV $IMAGE_MOUNT_POINT
+if [[ $EXCLUDE_FROM ]]; then
+    export EXCLUDE_FROM_CLAUSE="--exclude-from $EXCLUDE_FROM"
+fi;
+
 echo "Copying this machine's root filesystem to the image on $LOOPDEV"
 rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
          --exclude='/tmp/**'  --exclude'=/boot/**' --exclude='/media/**'   \
@@ -110,6 +136,7 @@ rsync -a --exclude='/proc/**' --exclude'=/sys/**'  --exclude='/var/run/**' \
          --exclude='/home/pi/.ssh/id_dsa' \
          --exclude='/home/pi/.ssh/id_dsa.pub' \
          --exclude='/home/pi/.ssh/tunnel_port' \
+         $EXCLUDE_FROM_CLAUSE \
          / $IMAGE_MOUNT_POINT/
 
 export SG_VERSION=``
