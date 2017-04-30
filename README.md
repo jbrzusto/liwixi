@@ -131,6 +131,7 @@ DEST and TEMP should be on a USB memory stick or other external storage that
 you have already mounted, because the SD card itself is comparatively slow
 for large transfers, and might not have sufficient storage anyway.
 
+Do ./pliwixi for more details and options.
 
 After some chugging, and a chance to customize the image from a shell,
 you end up with a file called

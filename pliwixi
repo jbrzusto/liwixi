@@ -16,7 +16,7 @@
 # License: CC BY-SA or GPL v 2 or later
 
 export AUTO=0
-export EXCLUDE_FROM=
+export EXCLUDE_FROM="$LIWIXI_EXCLUDE_FROM"
 
 while [[ "$1" != "" ]]; do
     case $1 in
@@ -32,11 +32,8 @@ while [[ "$1" != "" ]]; do
             break
             ;;
     esac
-    wend
-;;
+done
 
-
-fi
 export BRAND=$1
 export DEST=$2
 export TEMP=$3
@@ -73,6 +70,12 @@ Options:
    -e: EXCLUDE is a path to a file containing files and paths to exclude
        from the image; see the documentation for '--exclude-from' in
        "man rsync"
+
+Environment Variables:
+
+    LIWIXI_EXCLUDE_FROM: specifies a file for exclusions, just like
+      the "-e EXCLUDE" option.  The command-line EXCLUDE option, if
+      specified, overrides the environment variable.
 
 This script must be run as root.
 
