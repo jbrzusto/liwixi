@@ -36,7 +36,7 @@ esac
 
 # mount /dev/mmcblk0p1 on the rootfs at /dev/sdcard
 mkdir /dev/sdcard
-mount /dev/mmcblk0p1 /dev/sdcard
+mount -o flush,dirsync /dev/mmcblk0p1 /dev/sdcard
 
 # set up the loopback device on the image
 losetup /dev/loop0 /dev/sdcard/@@LIWIXI_IMAGE_FILENAME@@
