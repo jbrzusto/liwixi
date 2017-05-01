@@ -1,13 +1,13 @@
 # liwixi - linux where I can see it
 
-Easily install linux onto a μSD card without imaging:
+Generate an easy-to-install linux blob from a running system.  *Easy* means:
 
 ![liwixi user install procedure](liwixi_to_micro_SD_card.png)
 ### Known working computer / OS: ###
 
   2017-04-28:  Raspberry Pi 2/3 with Raspbian 8
   
-## For Users ##
+## For Users (the picture above in words) ##
 
 - insert a brand new SD card into your laptop
 
