@@ -1,10 +1,12 @@
 # liwixi - linux where I can see it
 
-Boot a small computer from a μSD card without imaging it.
-Known to work for these computer / OS combinations so far:
+Easily install linux onto a μSD card without imaging:
+
+![liwixi user install procedure](liwixi_to_micro_SD_card.png)
+### Known working computer / OS: ###
 
   2017-04-28:  Raspberry Pi 2/3 with Raspbian 8
-
+  
 ## For Users ##
 
 - insert a brand new SD card into your laptop
